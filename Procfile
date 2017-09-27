@@ -1,1 +1,1 @@
-web: gunicorn -b 0.0.0.0:$PORT mozreviewers.app:app --log-gile -
+web: gunicorn -b 0.0.0.0:$PORT mozreviewers.app:app --log-file -
