@@ -1,0 +1,26 @@
+{
+    "useless_authors":
+    [
+        "B2G Bumper Bot <release+b2gbumper@mozilla.com>",
+        "Gaia Pushbot <release+gaiajson@mozilla.com>",
+        "Mozilla Graphics Team <graphics@mozilla.com>"
+    ],
+    "post":
+    {
+        "token": "123",
+        "url": "http://127.0.0.1:5000"
+    },
+    "paths":
+    {
+        "hg": "/home/calixte/dev/mozilla/mozilla-central.hg",
+        "authors_data": "./tmp/authors_data.json",
+        "mapping": "./tmp/mapping.json",
+        "files_stats": "./tmp/filestats.json",
+        "log": "/tmp/mozstats.txt",
+        "output": "./tmp/backup"
+    },
+    "emails":
+    [
+        "cdenizet@mozilla.com"
+    ]
+}
