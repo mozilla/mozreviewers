@@ -4,6 +4,8 @@
 
 from collections import defaultdict
 from libmozdata.bugzilla import BugzillaUser
+from libmozdata.connection import Connection
+import math
 import re
 import six
 
@@ -28,9 +30,15 @@ def get_nick(authors):
                     'nick_name': nick}
 
     authors = list(authors)
-    BugzillaUser(user_names=authors,
-                 include_fields=['name', 'real_name'],
-                 user_handler=user_handler).wait()
+    queries = []
+    for chunk in Connection.chunks(authors, 20):
+        query = BugzillaUser(user_names=chunk,
+                             include_fields=['name', 'real_name'],
+                             user_handler=user_handler)
+        queries.append(query)
+
+    for q in queries:
+        q.wait()
 
     authors = [bz[a] for a in authors if a in bz]
     return authors
@@ -68,7 +76,9 @@ def get_top(stats, number):
     if len(stats) > number:
         stats = stats[:number]
 
-    return [r[0] for r in stats]
+    scores = [r[1] for r in stats]
+    persons = [r[0] for r in stats]
+    return persons, scores
 
 
 def top(files, number=5):
@@ -84,8 +94,10 @@ def top(files, number=5):
     filestats = FilesStats.get(files)['stats']
     authors = Authors.get()['bznames']
     stats = gather(filestats, authors)
-    persons = get_top(stats, number)
+    persons, scores = get_top(stats, number)
     persons = get_nick(persons)
+    for p, s in zip(persons, scores):
+        p['score'] = math.floor(s * 1000.) / 10.
 
     return {'top': persons,
             'error': ''}
@@ -140,8 +152,10 @@ def get(patch, number=5):
     if patch_author in stats:
         del stats[patch_author]
 
-    reviewers = get_top(stats, number)
+    reviewers, scores = get_top(stats, number)
     reviewers = get_nick(reviewers)
+    for r, s in zip(reviewers, scores):
+        r['score'] = math.floor(s * 1000) / 10.
 
     return {'reviewers': reviewers,
             'error': ''}
