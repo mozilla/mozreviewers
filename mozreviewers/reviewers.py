@@ -12,7 +12,7 @@ from .models import FilesStats, Authors
 from .logger import logger
 
 
-NICK_PAT = re.compile(r'\[(:[^\]]+)\]')
+NICK_PAT = re.compile(r'(:[\w]+)')
 
 
 def get_nick(authors):
