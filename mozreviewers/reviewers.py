@@ -155,7 +155,7 @@ def get(patch, number=5):
     reviewers, scores = get_top(stats, number)
     reviewers = get_nick(reviewers)
     for r, s in zip(reviewers, scores):
-        r['score'] = math.floor(s * 1000) / 10.
+        r['score'] = math.floor(s * 1000.) / 10.
 
     return {'reviewers': reviewers,
             'error': ''}
