@@ -145,9 +145,12 @@ def get(patch, number=5):
     # we compute the total score
     stats = defaultdict(lambda: 0.)
     names = [deleted, alllines, gathered_stats]
+    notempty = filter(lambda n: n, names)
+    notempty = list(notempty)
+    N = float(len(notempty))
     for name in names:
         for author, score in name.items():
-            stats[author] += score
+            stats[author] += score / N
 
     if patch_author in stats:
         del stats[patch_author]
