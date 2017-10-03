@@ -3,11 +3,37 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from collections import defaultdict
+from libmozdata.bugzilla import BugzillaUser
+import re
 import six
 
 from .patch_analysis import analyze_patch
 from .models import FilesStats, Authors
 from .logger import logger
+
+
+NICK_PAT = re.compile(r'\[(:[^\]]+)\]')
+
+
+def get_nick(authors):
+    bz = {}
+
+    def user_handler(u):
+        real = u['real_name']
+        m = NICK_PAT.search(real)
+        nick = m.group(1) if m else ''
+        name = u['name']
+        bz[name] = {'name': name,
+                    'real_name': real,
+                    'nick_name': nick}
+
+    authors = list(authors)
+    BugzillaUser(user_names=authors,
+                 include_fields=['name', 'real_name'],
+                 user_handler=user_handler).wait()
+
+    authors = [bz[a] for a in authors if a in bz]
+    return authors
 
 
 def percent(scores):
@@ -16,6 +42,53 @@ def percent(scores):
     for author, score in scores.items():
         percentages[author] = float(score) / total
     return percentages
+
+
+def gather(filestats, authors):
+    gathered_stats = defaultdict(lambda: 0.)
+    for stats in filestats.values():
+        for author, score in stats.items():
+            gathered_stats[author] += score
+
+    gathered_stats = percent(gathered_stats)
+    # we remove all the bz authors who aren't in Authors
+    # (because they don't commit anything in the last 3 months)
+    # for information: we take into account the old devs to compute the score
+    # of the actual devs to avoid to have specialists who made almost nothing
+    bzauthors = set(authors.values())
+    torm = [a for a in gathered_stats.keys() if a not in bzauthors]
+    for a in torm:
+        del gathered_stats[a]
+    return gathered_stats
+
+
+def get_top(stats, number):
+    stats = sorted(stats.items(), key=lambda p: p[1], reverse=True)
+    stats = list(stats)
+    if len(stats) > number:
+        stats = stats[:number]
+
+    return [r[0] for r in stats]
+
+
+def top(files, number=5):
+    logger.info('Get top authors')
+    if isinstance(files, dict) and 'files' in files:
+        if 'number' in files:
+            number = int(files['number'])
+        files = files['files']
+    if isinstance(files, six.string_types):
+        files = [files]
+    if not isinstance(files, list):
+        files = list(files)
+    filestats = FilesStats.get(files)['stats']
+    authors = Authors.get()['bznames']
+    stats = gather(filestats, authors)
+    persons = get_top(stats, number)
+    persons = get_nick(persons)
+
+    return {'top': persons,
+            'error': ''}
 
 
 def get(patch, number=5):
@@ -55,20 +128,7 @@ def get(patch, number=5):
     deleted = {authors[k]: n for k, n in deleted.items() if k in authors}
     alllines = {authors[k]: n for k, n in alllines.items() if k in authors}
 
-    gathered_stats = defaultdict(lambda: 0.)
-    for stats in filestats.values():
-        for author, score in stats.items():
-            gathered_stats[author] += score
-
-    gathered_stats = percent(gathered_stats)
-    # we remove all the bz authors who aren't in Authors
-    # (because they don't commit anything in the last 3 months)
-    # for information: we take into account the old devs to compute the score
-    # of the actual devs to avoid to have specialists who made almost nothing
-    bzauthors = set(authors.values())
-    torm = [a for a in gathered_stats.keys() if a not in bzauthors]
-    for a in torm:
-        del gathered_stats[a]
+    gathered_stats = gather(filestats, authors)
 
     # we compute the total score
     stats = defaultdict(lambda: 0.)
@@ -80,11 +140,8 @@ def get(patch, number=5):
     if patch_author in stats:
         del stats[patch_author]
 
-    stats = sorted(stats.items(), key=lambda p: p[1], reverse=True)
-    stats = list(stats)
-    if len(stats) > number:
-        stats = stats[:number]
+    reviewers = get_top(stats, number)
+    reviewers = get_nick(reviewers)
 
-    reviewers = [r[0] for r in stats]
     return {'reviewers': reviewers,
             'error': ''}

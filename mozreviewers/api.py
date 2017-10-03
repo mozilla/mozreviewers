@@ -18,12 +18,12 @@ def authors():
             return jsonify(models.Authors.post(request.get_json()))
         else:
             return jsonify(models.Authors.get(request.get_json()))
+    return jsonify({})
 
 
 def filestats():
     if request.method == 'GET':
         files = request.args.getlist('file')
-        print(files)
         return jsonify(models.FilesStats.get(files))
     elif request.method == 'POST':
         token = request.headers.get('token', '')
@@ -31,8 +31,20 @@ def filestats():
             return jsonify(models.FilesStats.post(request.get_json()))
         else:
             return jsonify(models.FileStats.get(request.get_json()))
+    return jsonify({})
 
 
 def reviewer():
     if request.method == 'POST':
         return jsonify(reviewers.get(request.get_json()))
+    return jsonify({})
+
+
+def top():
+    if request.method == 'GET':
+        files = request.args.getlist('file')
+        number = int(request.args.get('number', 5))
+        return jsonify(reviewers.top(files, number))
+    elif request.method == 'POST':
+        return jsonify(reviewers.top(request.get_json()))
+    return jsonify({})

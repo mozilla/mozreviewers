@@ -37,5 +37,12 @@ def reviewer():
     return api.reviewer()
 
 
+@app.route('/top', methods=['GET', 'POST'])
+@cross_origin()
+def top():
+    from . import api
+    return api.top()
+
+
 if __name__ == '__main__':
     app.run()
