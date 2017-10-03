@@ -78,7 +78,7 @@ def get_hg_info(hgpath, last_rev, rev='tip'):
             if bugid:
                 res[author].add(bugid)
                 bugids.add(bugid)
-                patch = client.export([rev])
+                patch = client.export([rev], git=True)
                 patch = patch.decode('utf-8')
                 patches.append({'author': author,
                                 'date': date.strftime('%Y-%m-%d'),
