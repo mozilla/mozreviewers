@@ -67,7 +67,8 @@ def analyze_patch(patch, check_annotations):
             if not h:
                 continue
 
-            old_p = h.old_p[2:] if h.old_p.startswith('a/') else h.old_p
+            old_p = h.old_path
+            old_p = old_p[2:] if old_p.startswith('a/') else old_p
             if old_p in newed:
                 # the file has just been added or deleted,
                 # so nothing to compute
